@@ -14,7 +14,7 @@ public class Db {
 
     public Db put(String key, String value) {
         OperationStatus status = put(database, key, value);
-        if(OperationStatus.SUCCESS != status) throw new RuntimeException("fail");
+        if (OperationStatus.SUCCESS != status) throw new RuntimeException("fail");
         return this;
     }
 
@@ -23,26 +23,34 @@ public class Db {
     }
 
     private static OperationStatus put(Database db, String key, String value) {
-        return db.put(transaction(), new StringValue(key) , new StringValue(value));
+        return db.put(transaction(), new StringValue(key), new StringValue(value));
     }
 
     private static String get(Database db, String key) {
         StringValue data = new StringValue();
-        db.get(transaction(), new StringValue(key), data, LockMode.DEFAULT);
+        db.get(transaction(), new StringValue(key), data, LockMode.READ_UNCOMMITTED);
         return data.toString();
     }
 
     static Db database(String dbName) {
-        return new Db(environment().openDatabase(transaction(), dbName, databaseConfig()));
+        return new Db(environment(environmentConfig()).openDatabase(transaction(), dbName, databaseConfig()));
+    }
+
+    private static EnvironmentConfig environmentConfig() {
+        return new EnvironmentConfig().setAllowCreate(true);
+    }
+
+    static Db database(String dbName, DatabaseConfig dbConfig, EnvironmentConfig config) {
+        return new Db(environment(config).openDatabase(transaction(), dbName, dbConfig));
     }
 
     private static Transaction transaction() {
         return null;
     }
 
-    private static Environment environment() {
+    private static Environment environment(EnvironmentConfig config) {
         File dbFile = new File("/tmp/berkley_ho");
-        return new Environment(dbFile, new EnvironmentConfig().setAllowCreate(true));
+        return new Environment(dbFile, config);
     }
 
     private static DatabaseConfig databaseConfig() {
@@ -51,10 +59,10 @@ public class Db {
     }
 
     public String stats() {
-       return database.getStats(new StatsConfig()).toString();
+        return database.getStats(new StatsConfig()).toString();
     }
 
-    private static class StringValue extends DatabaseEntry{
+    private static class StringValue extends DatabaseEntry {
         private StringValue() {
         }
 
@@ -63,7 +71,7 @@ public class Db {
         }
 
         @Override
-        public String toString(){
+        public String toString() {
             return new String(getData());
         }
     }
